@@ -1,1 +1,307 @@
-# Regular circular dependency
+# Default export circ dep
+
+Now that we have basic understand of Webpack's module resolution system, it's time to understand how a circular dependency works.
+
+We use the same four files as on the [previous page](/): `entry.js`, `moduleA.js`, `moduleB.js` and `moduleC.js`. These are compiled into `dist/main.js`.
+
+<CH.Code>
+```javascript entry.js
+import foo from './moduleA';
+
+console.log(foo);
+```
+
+```javascript moduleA.js
+import c from './moduleC'
+
+const foo = c+'bar';
+export default foo;
+```
+
+```javascript moduleC.js
+import b from './moduleB'
+
+const baz = b+'baz';
+export default baz;
+```
+
+```javascript moduleB.js
+import foo from './moduleA';
+
+const bar = foo + 'bar';
+
+export default bar;
+```
+</CH.Code>
+
+Before continuing, try to figure out what will be console logged by `entry.js`.
+
+## How does the circular dependency look like?
+
+We have an import chain where `moduleA.js` eventually depends on itself:
+
+```
+entry -> moduleA -> moduleC -> moduleB -> moduleA
+```
+
+And `moduleA.js` defines a default export, no named exports
+
+## How does Webpack handle this circular dependency?
+
+Follow on for a detailed explanation, but in short:
+
+- When Webpack encounters a non-cached module, it preliminary populates the cache for the module with `module.exports = {}`.
+- That means that when a module depends on itself, it will receive an empty object as the value for itself.
+- This can lead to unexpected `undefined` values for default exports.
+
+### In detail
+
+<CH.Spotlight>
+```js dist/main.js
+(function () {
+  "use strict";
+  var __webpack_modules__ = ({
+    "./src/regular/moduleA.js":
+      (function (__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+        __webpack_require__.r(__webpack_exports__);
+        var _moduleC__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__("./src/regular/moduleC.js");
+        const foo = _moduleC__WEBPACK_IMPORTED_MODULE_0__["default"] + 'bar';
+        __webpack_exports__["default"] = (foo);
+      }),
+    "./src/regular/moduleB.js":
+      (function (__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+        __webpack_require__.r(__webpack_exports__);
+        var _moduleA__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__("./src/regular/moduleA.js");
+        const bar = _moduleA__WEBPACK_IMPORTED_MODULE_0__["default"] + 'bar';
+        __webpack_exports__["default"] = (bar);
+      }),
+    "./src/regular/moduleC.js":
+      (function (__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+        __webpack_require__.r(__webpack_exports__);
+        var _moduleB__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__("./src/regular/moduleB.js");
+        const baz = _moduleB__WEBPACK_IMPORTED_MODULE_0__["default"] + 'baz';
+        __webpack_exports__["default"] = (baz);
+      })
+  });
+
+  var __webpack_module_cache__ = {};
+
+  function __webpack_require__(moduleId) {
+    var cachedModule = __webpack_module_cache__[moduleId];
+    if (cachedModule !== undefined) {
+      return cachedModule.exports;
+    }
+    var module = __webpack_module_cache__[moduleId] = {
+      exports: {}
+    };
+    __webpack_modules__[moduleId](module, module.exports, __webpack_require__);
+    return module.exports;
+  }
+
+  !function () {
+    __webpack_require__.r = function (exports) {
+      if (typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+        Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
+      }
+      Object.defineProperty(exports, '__esModule', { value: true });
+    };
+  }();
+
+  var __webpack_exports__ = {};
+  
+  !function () {
+    __webpack_require__.r(__webpack_exports__);
+    var _moduleA__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__("./src/regular/moduleA.js");
+    console.log(_moduleA__WEBPACK_IMPORTED_MODULE_0__["default"]);
+  }();
+})()
+  ;
+``` 
+
+---
+#### Full file
+
+```js dist/main.js
+```
+
+---
+
+#### Entrypoint requires `moduleA.js`
+
+The entry point is being executed first. The first thing it encounters is a dependency on `moduleA.js`.
+
+```js dist/main.js focus=54
+```
+
+---
+
+#### Webpack_require looks up `moduleA.js` (1)
+
+There is a cache miss for `moduleA.js`. Webpack will start the process of looking the module from scratch.
+
+Before any module code is being executed Webpack already sets a PRELIMINARY value for `exports` for that module in the module cache
+
+<span style={{color:"red"}}>This is key in understanding why we do not end up in an infinite loop</span>.
+
+```js dist/main.js focus=34:36
+```
+
+
+---
+
+#### Webpack_require looks up `moduleA.js` (2)
+
+Imagine we set a breakpoint on line 37. The values of variables is quite interesting!
+
+Without executing a line of code of `moduleA.js` we have an entry in the module cache!!!
+
+<details>
+  <summary>[Dropdown] Values in scope with breakpoint before line 37</summary>
+  
+  ```js
+  moduleId = "moduleA.js";
+  cachedModule = undefined;
+  __webpack_module_cache__: {
+    "moduleA.js": {
+      exports: {}
+    }
+  }
+  ```
+  
+</details>
+
+```js dist/main.js focus=37 mark=37[5:81]
+```
+
+---
+
+#### Webpack_require executes the `moduleA.js` function
+
+Now we carry on with actually executing the `moduleA.js` code.
+
+The first thing we encounter on line 7 is an import for `moduleC.js`. 
+
+Here we go again...
+
+```js dist/main.js focus=5:10
+```
+
+---
+
+#### Webpack_require executes the `moduleA.js` function
+
+Now we carry on with actually executing the `moduleA.js` code.
+
+The first thing we encounter on line 7 is an import for `moduleC.js`. 
+
+This triggers another call to `__webpack_require__`, 
+just like the first line of `moduleC` which triggers yet another call to `__webpack_require__` to resolve `moduleB`.
+
+Let's fast foward a bit >>
+
+
+```js dist/main.js focus=5:10
+```
+
+---
+
+#### Webpack_require executes the `moduleB.js` function
+
+So we are now 3 layers of recursion deep:
+
+1. entry -> `__webpack_require__('./src/regular/moduleA.js')`
+2. moduleA -> `__webpack_require__('./src/regular/moduleC.js')`
+3. moduleC -> `__webpack_require__('./src/regular/moduleB.js')`
+
+Let's add a breakpoint on line 14 and inspect the moduleCache there:
+
+<details>
+  <summary>[Dropdown] module cache with breakpoint before line 14</summary>
+  
+  ```js
+  __webpack_module_cache__: {
+    "moduleA.js": {
+      exports: {}
+    },
+    "moduleC.js": {
+      exports: {}
+    },
+    "moduleB.js": {
+      exports: {}
+    }
+  }
+  ```
+</details>
+
+As we can see now, the value of 'const bar' on line 15 will become `undefined + 'bar'` and we can also set the default export to `"undefinedbar"`
+
+Let's fast forward again >>
+
+```js dist/main.js focus=12:17 mark=14[8:100]
+```
+
+---
+
+#### Back to the `moduleA` function execution
+
+We've resolved `moduleC.js` and `moduleB.js` and can now continue with the rest of `moduleA.js`
+
+Let's add a breakpoint on line 8 and inspect the moduleCache there:
+
+<details>
+  <summary>[Dropdown] module cache with breakpoint before line 8</summary>
+  
+  ```js
+  __webpack_module_cache__: {
+    "moduleA.js": {
+      exports: {}
+    },
+    "moduleC.js": {
+      exports: {
+        default: "undefinedbarbaz"
+      }
+    },
+    "moduleB.js": {
+      exports: {
+        default: "undefinedbar"
+      }
+    }
+  }
+  ```
+</details>
+
+This means that the default export of `moduleA` will become `"undefinedbarbaz" + 'bar'`
+
+```js dist/main.js focus=5:10 mark=8[8:100]
+```
+
+</CH.Spotlight>
+
+Lastly, after all imports are required, it means that the module cache will become:
+
+```js
+  __webpack_module_cache__: {
+    "moduleA.js": {
+      exports: {
+        default: "undefinedbarbazbar"
+      }
+    },
+    "moduleC.js": {
+      exports: {
+        default: "undefinedbarbaz"
+      }
+    },
+    "moduleB.js": {
+      exports: {
+        default: "undefinedbar"
+      }
+    }
+  }
+  ```
+
+And the entrypoint will console.log `'undefinedbarbazbar'`.
+
+## Take aways
+
+1. Webpack will avoid an infinite loop by setting preliminary `module.exports = {}` for each module.
+2. When the module which is depending on itself uses a **default export**, it will cause the dependent version to be `undefined`
