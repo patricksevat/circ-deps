@@ -1,4 +1,4 @@
-import foo from './a';
+import foo from './moduleA';
 
 const bar = foo + 'bar';
 

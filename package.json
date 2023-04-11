@@ -1,0 +1,29 @@
+{
+  "name": "circ-deps-repro-minimal",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "next dev -p 4444",
+    "build-regular": "yarn webpack -c src/regular/webpack.config.js",
+    "build-init-error": "yarn webpack -c \"src/regular initialization error/webpack.config.js\"",
+    "build-regular-copied": "yarn webpack -c \"src/regular with copied circ dep/webpack.config.js\""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@code-hike/mdx": "^0.8.1",
+    "@mdx-js/loader": "2.2.1",
+    "@mdx-js/react": "^2.2.1",
+    "@next/mdx": "^13.3.0",
+    "next": "^13.3.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "webpack": "^5.77.0"
+  },
+  "devDependencies": {
+    "webpack-cli": "^5.0.1"
+  }
+}

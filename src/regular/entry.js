@@ -1,3 +1,3 @@
-import foo from './a';
+import foo from './moduleA';
 
 console.log(foo);

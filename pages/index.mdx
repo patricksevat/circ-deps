@@ -1,0 +1,179 @@
+# About this repo
+
+This repo showcases a couple different ways how circular dependencies are being handled by Webpack
+
+## Got to know before continuing!
+
+The main thing you need to know about Webpack in the context of circular dependencies is how it resolves module dependencies.
+
+Given these files (use tabs to switch files):
+
+<CH.Code>
+```javascript entry.js
+import foo from './moduleA';
+
+console.log(foo);
+```
+
+```javascript moduleA.js
+import c from './moduleC'
+
+const foo = c+'bar';
+export default foo;
+```
+
+```javascript moduleC.js
+import b from './moduleB'
+
+const baz = b+'baz';
+export default baz;
+```
+
+```javascript moduleB.js
+import foo from './moduleA';
+
+const bar = foo + 'bar';
+
+export default bar;
+```
+</CH.Code>
+
+#### Webpack generates this `dist/main.js`, click on the tabs to go through it:
+
+<CH.Spotlight>
+```js dist/main.js
+(function () {
+  "use strict";
+  var __webpack_modules__ = ({
+    "./src/regular/a.js":
+      (function (__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+        __webpack_require__.r(__webpack_exports__);
+        var _c__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__("./src/regular/c.js");
+        const foo = _c__WEBPACK_IMPORTED_MODULE_0__["default"] + 'bar';
+        __webpack_exports__["default"] = (foo);
+      }),
+    "./src/regular/b.js":
+      (function (__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+        __webpack_require__.r(__webpack_exports__);
+        var _a__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__("./src/regular/a.js");
+        const bar = _a__WEBPACK_IMPORTED_MODULE_0__["default"] + 'bar';
+        __webpack_exports__["default"] = (bar);
+      }),
+    "./src/regular/c.js":
+      (function (__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+        __webpack_require__.r(__webpack_exports__);
+        var _b__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__("./src/regular/b.js");
+        const baz = _b__WEBPACK_IMPORTED_MODULE_0__["default"] + 'baz';
+        __webpack_exports__["default"] = (baz);
+      })
+  });
+
+  var __webpack_module_cache__ = {};
+  
+  function __webpack_require__(moduleId) {
+    var cachedModule = __webpack_module_cache__[moduleId];
+    if (cachedModule !== undefined) {
+      return cachedModule.exports;
+    }
+    var module = __webpack_module_cache__[moduleId] = {
+      exports: {}
+    };
+    __webpack_modules__[moduleId](module, module.exports, __webpack_require__);
+    return module.exports;
+  }
+  
+  !function () {
+    __webpack_require__.r = function (exports) {
+      if (typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+        Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
+      }
+      Object.defineProperty(exports, '__esModule', { value: true });
+    };
+  }();
+  
+  var __webpack_exports__ = {};
+  
+  !function () {
+    __webpack_require__.r(__webpack_exports__);
+    var _a__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__("./src/regular/a.js");
+    console.log(_a__WEBPACK_IMPORTED_MODULE_0__["default"]);
+  }();
+})()
+  ;
+``` 
+
+---
+#### Full file
+
+```js dist/main.js
+```
+
+---
+
+#### The `__webpack_modules__` variable
+
+This variable is an array or object which contains the source code for a particular file, but transpiled in a couple ways:
+
+1. It is transformed into a function
+2. Certain elements are transpiled, such as `require()`, `import` and `export`
+
+```js dist/main.js focus=3:25
+```
+
+---
+
+#### `moduleA.js` before and after transpilation
+
+<CH.Code>
+```js src/regular/moduleA.js
+import c from './moduleC'
+
+const foo = c+'bar';
+export default foo;
+```
+---
+```js dist/main.js focus=3:8
+var __webpack_modules__ = ({
+    "./src/regular/a.js":
+      (function (__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+        __webpack_require__.r(__webpack_exports__);
+        var _c__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__("./src/regular/c.js");
+        const foo = _c__WEBPACK_IMPORTED_MODULE_0__["default"] + 'bar';
+        __webpack_exports__["default"] = (foo);
+      }),
+    "./src/regular/b.js":
+      (function (__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+        __webpack_require__.r(__webpack_exports__);
+        var _a__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__("./src/regular/a.js");
+        const bar = _a__WEBPACK_IMPORTED_MODULE_0__["default"] + 'bar';
+        __webpack_exports__["default"] = (bar);
+      }),
+    "./src/regular/c.js":
+      (function (__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+        __webpack_require__.r(__webpack_exports__);
+        var _b__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__("./src/regular/b.js");
+        const baz = _b__WEBPACK_IMPORTED_MODULE_0__["default"] + 'baz';
+        __webpack_exports__["default"] = (baz);
+      })
+  });
+```
+</CH.Code>
+
+---
+
+#### The `__webpack_module_cache__` and `__webpack_require__` variables
+
+As you can see in the example above, `import c from './moduleC''` is transformed to `__webpack_require__("./src/regular/c.js")`.
+
+So what is `__webpack_require__()`?
+
+Whenever `__webpack_require__` is called:
+
+- it takes the `moduleId` (`"./src/regular/c.js"`)
+- it checks if there is already an entry for this `moduleId` in `__webpack_module_cache__`
+
+```js dist/main.js focus=27,30:33
+```
+
+</CH.Spotlight>
+
