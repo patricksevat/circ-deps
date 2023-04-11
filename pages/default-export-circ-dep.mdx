@@ -151,7 +151,9 @@ Before any module code is being executed Webpack already sets a PRELIMINARY valu
 
 #### Webpack_require looks up `moduleA.js` (2)
 
-Imagine we set a breakpoint on line 37. The values of variables is quite interesting!
+Imagine we set a breakpoint on line 37, where we are about to call the module function and execute code from `moduleA.js`
+
+The values of variables is quite interesting!
 
 Without executing a line of code of `moduleA.js` we have an entry in the module cache!!!
 
@@ -179,23 +181,9 @@ Without executing a line of code of `moduleA.js` we have an entry in the module 
 
 Now we carry on with actually executing the `moduleA.js` code.
 
-The first thing we encounter on line 7 is an import for `moduleC.js`. 
+The first thing we encounter on line 7 is an import for `moduleC.js`, which will trigger another call to `__webpack_require__`.
 
-Here we go again...
-
-```js dist/main.js focus=5:10
-```
-
----
-
-#### Webpack_require executes the `moduleA.js` function
-
-Now we carry on with actually executing the `moduleA.js` code.
-
-The first thing we encounter on line 7 is an import for `moduleC.js`. 
-
-This triggers another call to `__webpack_require__`, 
-just like the first line of `moduleC` which triggers yet another call to `__webpack_require__` to resolve `moduleB`.
+Similarly, the first line of `moduleC` will trigger yet another call to `__webpack_require__` to resolve `moduleB`.
 
 Let's fast foward a bit >>
 
@@ -233,7 +221,9 @@ Let's add a breakpoint on line 14 and inspect the moduleCache there:
   ```
 </details>
 
-As we can see now, the value of 'const bar' on line 15 will become `undefined + 'bar'` and we can also set the default export to `"undefinedbar"`
+This means that when we call `__webpack_require__("./src/regular/moduleA.js")` now, we will get a **cached** result. Even though the value in the cache is not properly set.
+
+This means that the value of 'const bar' on line 15 will become `undefined + 'bar'` and we can also set the default export to `"undefinedbar"`
 
 Let's fast forward again >>
 
@@ -305,3 +295,8 @@ And the entrypoint will console.log `'undefinedbarbazbar'`.
 
 1. Webpack will avoid an infinite loop by setting preliminary `module.exports = {}` for each module.
 2. When the module which is depending on itself uses a **default export**, it will cause the dependent version to be `undefined`
+
+
+## Next example
+
+[Click here](/named-exports-circ-dep) to visit the next example with named exports

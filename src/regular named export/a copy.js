@@ -1,4 +1,4 @@
-import c from './c';
+import c from './moduleC';
 
 const a = 'a';
 const abc = c+'b';

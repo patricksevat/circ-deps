@@ -1,0 +1,251 @@
+# Named exports export circ dep
+
+This example assumes you have followed along with the [basics](/) and the [default export example](/default-export-circ-dep).
+
+The full source code is very similar to the previous example, but now we have:
+- named imports in `entry.js` and `moduleB.js` 
+- named exports is `moduleA.js`
+
+<CH.Code>
+```javascript entry.js
+import { namedA, namedWithImportedValue } from './moduleA';
+
+console.log(({ namedA, namedWithImportedValue }));
+```
+
+```javascript moduleA.js
+import c from './moduleC';
+
+const namedA = 'a';
+const namedWithImportedValue = c+'b';
+
+export {
+  namedA,
+  namedWithImportedValue,
+}
+```
+
+```javascript moduleC.js
+import b from './moduleB'
+
+const baz = b+'baz';
+export default baz;
+```
+
+```javascript moduleB.js
+import * as a from './moduleA'
+
+const bar = a.namedWithImportedValue + 'bar';
+
+export default bar;
+```
+</CH.Code>
+
+## How does the circular dependency look like?
+
+We have an import chain where `moduleA.js` eventually depends on itself:
+
+```
+entry -> moduleA -> moduleC -> moduleB -> moduleA
+```
+
+And `moduleA.js` defines named exports
+
+## How does Webpack handle this circular dependency with named exports?
+
+Follow on for a detailed explanation, but in short:
+
+TODO:
+
+### In detail
+
+<CH.Spotlight>
+```js dist/main.js
+(function () {
+  "use strict";
+  var __webpack_modules__ = ({
+    "./src/regular named export/moduleA.js":
+      (function (__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+        __webpack_require__.r(__webpack_exports__);
+        __webpack_require__.d(__webpack_exports__, {
+          "namedA": function () { return namedA; },
+          "namedWithImportedValue": function () { return namedWithImportedValue; }
+        });
+
+        var _moduleC__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__("./src/regular named export/moduleC.js");
+        const namedA = 'a';
+        const namedWithImportedValue = _moduleC__WEBPACK_IMPORTED_MODULE_0__["default"] + 'b';
+      }),
+
+    "./src/regular named export/moduleB.js":
+      (function (__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+        __webpack_require__.r(__webpack_exports__);
+        var _moduleA__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__("./src/regular named export/moduleA.js");
+        const bar = _moduleA__WEBPACK_IMPORTED_MODULE_0__.namedWithImportedValue + 'bar';
+        __webpack_exports__["default"] = (bar);
+      }),
+
+    "./src/regular named export/moduleC.js":
+      (function (__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+        __webpack_require__.r(__webpack_exports__);
+        var _moduleB__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__("./src/regular named export/moduleB.js");
+        const baz = _moduleB__WEBPACK_IMPORTED_MODULE_0__["default"] + 'baz';
+        __webpack_exports__["default"] = (baz);
+      })
+  });
+
+  var __webpack_module_cache__ = {};
+
+  function __webpack_require__(moduleId) {
+    var cachedModule = __webpack_module_cache__[moduleId];
+    if (cachedModule !== undefined) {
+      return cachedModule.exports;
+    }
+
+    var module = __webpack_module_cache__[moduleId] = {
+      exports: {}
+    };
+
+    __webpack_modules__[moduleId](module, module.exports, __webpack_require__);
+    
+    return module.exports;
+  }
+
+  !function () {
+    __webpack_require__.d = function (exports, definition) {
+      for (var key in definition) {
+        if (__webpack_require__.o(definition, key) && !__webpack_require__.o(exports, key)) {
+          Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
+        }
+      }
+    };
+  }();
+
+  !function () {
+    __webpack_require__.o = function (obj, prop) { return Object.prototype.hasOwnProperty.call(obj, prop); }
+  }();
+
+  !function () {
+    __webpack_require__.r = function (exports) {
+      if (typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+        Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
+      }
+      Object.defineProperty(exports, '__esModule', { value: true });
+    };
+  }();
+
+  var __webpack_exports__ = {};
+
+  !function () {
+    __webpack_require__.r(__webpack_exports__);
+    var _moduleA__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__("./src/regular named export/moduleA.js");
+    console.log(({ namedA: _moduleA__WEBPACK_IMPORTED_MODULE_0__.namedA, namedWithImportedValue: _moduleA__WEBPACK_IMPORTED_MODULE_0__.namedWithImportedValue }));
+  }();
+  
+})()
+  ;
+```
+
+---
+
+#### Full file
+
+```js dist/main.js
+```
+
+---
+
+#### Requiring `moduleA.js` the first time (1)
+
+Similar to the previous example, Webpack first looks in the cache and does not find a cache entry.
+
+Next, the preliminary exports are set: `module.exports = {}`
+
+And the module function is executed.
+
+What is *new* is that within the module function, is a bit of code which sets getters for the named exports on the module cache.
+
+```js dist/main.js focus=7:10
+```
+
+---
+
+#### Requiring `moduleA.js` the first time (2)
+
+The first thing to note about these getters are that these are set directly on the module cache.
+
+`__webpack_exports__` is a reference to `__webpack_module_cache__["./src/regular named export/moduleA.js"].exports`
+
+If we were to set a breakpoint before line 12, the module cache would be:
+
+<details>
+  <summary>[Dropdown] module cache with breakpoint before line 12</summary>
+  
+  ```js
+  var __webpack_module_cache__ = {
+    "./src/regular named export/moduleA.js": {
+      exports: {
+        namedA: function () { return namedA; },
+        namedWithImportedValue: function () { return namedWithImportedValue; }
+      }
+    }
+  }
+  ```
+</details>
+
+```js dist/main.js focus=5,42:46 mark=5[43:61]
+```
+
+---
+
+#### Requiring `moduleA.js` the first time (3)
+
+The second important thing to note is that these getters **return variables which will be instantiated later**
+
+Let's fast forward a bit and see why this matters >>
+
+```js dist/main.js focus=7:10,13:14
+```
+
+---
+
+#### Requiring `moduleA.js` the second time (1)
+
+We have recursively called `__webpack_require__` a couple of times:
+
+1. entry -> `__webpack_require__('./src/regular/moduleA.js')`
+2. moduleA -> `__webpack_require__('./src/regular/moduleC.js')`
+3. moduleC -> `__webpack_require__('./src/regular/moduleB.js')`
+
+And we are now about to execute the `moduleB.js` code
+
+```js dist/main.js focus=20
+```
+
+---
+
+#### Requiring `moduleA.js` the second time (2)
+
+There now is a cache hit when requiring `moduleA`. The cache returns the export object containing the setters.
+
+However when we try to access the getter on line 21, we get an **error**:
+
+<span style={{color: "red"}}>main.js:9 Uncaught ReferenceError: Cannot access 'namedWithImportedValue' before initialization</span>
+
+```js dist/main.js focus=21
+```
+
+</CH.Spotlight>
+
+Oops! None of the calls to `__webpack_require__()` finish and the named circular dependency might have just broken your app!
+
+## Take aways
+
+1. Webpack transpiles named exports into getters
+2. When the module which is depending on itself uses **named exports**, it will throw an error
+
+
+## Next example
+
+[Click here](/named-exports-circ-dep-e5) to visit a slight variation where we use ES5.
+

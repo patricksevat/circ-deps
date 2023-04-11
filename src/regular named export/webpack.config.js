@@ -2,7 +2,7 @@ const path = require('path')
 
 module.exports = {
   entry: [
-    './src/regular initialization error/entry'
+    './src/regular named export/entry'
   ],
   output: {
     path: path.resolve(__dirname, 'dist')
