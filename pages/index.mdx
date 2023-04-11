@@ -45,31 +45,31 @@ export default bar;
 (function () {
   "use strict";
   var __webpack_modules__ = ({
-    "./src/regular/a.js":
+    "./src/regular/moduleA.js":
       (function (__unused_webpack_module, __webpack_exports__, __webpack_require__) {
         __webpack_require__.r(__webpack_exports__);
-        var _c__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__("./src/regular/c.js");
-        const foo = _c__WEBPACK_IMPORTED_MODULE_0__["default"] + 'bar';
+        var _moduleC__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__("./src/regular/moduleC.js");
+        const foo = _moduleC__WEBPACK_IMPORTED_MODULE_0__["default"] + 'bar';
         __webpack_exports__["default"] = (foo);
       }),
-    "./src/regular/b.js":
+    "./src/regular/moduleB.js":
       (function (__unused_webpack_module, __webpack_exports__, __webpack_require__) {
         __webpack_require__.r(__webpack_exports__);
-        var _a__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__("./src/regular/a.js");
-        const bar = _a__WEBPACK_IMPORTED_MODULE_0__["default"] + 'bar';
+        var _moduleA__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__("./src/regular/moduleA.js");
+        const bar = _moduleA__WEBPACK_IMPORTED_MODULE_0__["default"] + 'bar';
         __webpack_exports__["default"] = (bar);
       }),
-    "./src/regular/c.js":
+    "./src/regular/moduleC.js":
       (function (__unused_webpack_module, __webpack_exports__, __webpack_require__) {
         __webpack_require__.r(__webpack_exports__);
-        var _b__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__("./src/regular/b.js");
-        const baz = _b__WEBPACK_IMPORTED_MODULE_0__["default"] + 'baz';
+        var _moduleB__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__("./src/regular/moduleB.js");
+        const baz = _moduleB__WEBPACK_IMPORTED_MODULE_0__["default"] + 'baz';
         __webpack_exports__["default"] = (baz);
       })
   });
 
   var __webpack_module_cache__ = {};
-  
+
   function __webpack_require__(moduleId) {
     var cachedModule = __webpack_module_cache__[moduleId];
     if (cachedModule !== undefined) {
@@ -81,7 +81,7 @@ export default bar;
     __webpack_modules__[moduleId](module, module.exports, __webpack_require__);
     return module.exports;
   }
-  
+
   !function () {
     __webpack_require__.r = function (exports) {
       if (typeof Symbol !== 'undefined' && Symbol.toStringTag) {
@@ -90,13 +90,13 @@ export default bar;
       Object.defineProperty(exports, '__esModule', { value: true });
     };
   }();
-  
+
   var __webpack_exports__ = {};
   
   !function () {
     __webpack_require__.r(__webpack_exports__);
-    var _a__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__("./src/regular/a.js");
-    console.log(_a__WEBPACK_IMPORTED_MODULE_0__["default"]);
+    var _moduleA__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__("./src/regular/moduleA.js");
+    console.log(_moduleA__WEBPACK_IMPORTED_MODULE_0__["default"]);
   }();
 })()
   ;
@@ -161,19 +161,51 @@ var __webpack_modules__ = ({
 
 ---
 
-#### The `__webpack_module_cache__` and `__webpack_require__` variables
+#### The `__webpack_require__` and `__webpack_module_cache__` variables
 
-As you can see in the example above, `import c from './moduleC''` is transformed to `__webpack_require__("./src/regular/c.js")`.
+As you can see in the example above, 
+
+`import c from './moduleC''` 
+
+is transformed to 
+
+`__webpack_require__("./src/regular/c.js")`.
 
 So what is `__webpack_require__()`?
 
 Whenever `__webpack_require__` is called:
 
 - it takes the `moduleId` (`"./src/regular/c.js"`)
-- it checks if there is already an entry for this `moduleId` in `__webpack_module_cache__`
+- it checks if there is already an entry for this `moduleId` in `__webpack_module_cache__` and return a cache hit or resolve the module, save it to cache and return the result
 
-```js dist/main.js focus=27,30:33
+```js dist/main.js focus=27,29:39
+```
+
+---
+
+#### `__webpack_module_cache__` cache hit
+
+In case there is an entry in `__webpack_module_cache__` for the requested moduleId Webpack will return the cached result:
+
+```js dist/main.js focus=30:33
+```
+
+---
+
+#### `__webpack_module_cache__` cache miss
+
+In case there is no entry in `__webpack_module_cache__` for the requested moduleId Webpack will:
+
+1. look up the module function in `__webpack_modules__`
+2. execute module function
+3. store the result in the cache
+4. return the result to the parent module which is importing the requested module
+
+```js dist/main.js focus=18:24,34:38
 ```
 
 </CH.Spotlight>
 
+### Next: our first circular dependency
+
+Now that you understand the basics of module resolution in Webpack, it's time to move to a circular dependency. [click here](/regular-circ-dep)
