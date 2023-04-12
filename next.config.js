@@ -1,18 +1,19 @@
-const theme = require("shiki/themes/nord.json")
-const {
-  remarkCodeHike,
-} = require("@code-hike/mdx")
+import theme from 'shiki/themes/nord.json' assert { type: "json" }
+import { remarkCodeHike } from '@code-hike/mdx';
+import remarkGfm from 'remark-gfm';
+import nextMDX from '@next/mdx';
 
-const withMDX = require("@next/mdx")({
+const withMDX = nextMDX({
   extension: /\.mdx?$/,
   options: {
     remarkPlugins: [
+      remarkGfm,
       [remarkCodeHike, { theme, lineNumbers: true }]
     ],
   },
 })
 
-module.exports = withMDX({
+export default withMDX({
   pageExtensions: [
     "ts", "tsx", "js", 
     "jsx", "md", "mdx"

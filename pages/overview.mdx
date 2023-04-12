@@ -1,0 +1,16 @@
+# Overview
+
+An overview of the various scenarios
+
+## Overview of combinations
+
+| Scenario              | type of export  | target  | (in)direct  | error | hoisting  | `module.exports` of circular module |
+|-----------------------|-----------------|---------|-------------|-------|-----------|-------------------------------------|
+| regular               | default         | es5     | direct      | -     | no        |`{}`                                 |
+| regular es6           | default         | es6     | direct      |y[^1]  | no        |                                     |
+| regular es6 var       | default         | es6     | direct      |y[^1]  | yes       |                                     |
+| regular indirect      | default         | es5     | indirect    |y[^2]  | no        |                                     |
+
+
+[^1]: `Uncaught ReferenceError: Cannot access '__WEBPACK_DEFAULT_EXPORT__' before initialization`
+[^2]: `Uncaught TypeError: (0 , _moduleA__WEBPACK_IMPORTED_MODULE_0__.default) is not a function`
