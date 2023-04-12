@@ -4,13 +4,17 @@ An overview of the various scenarios
 
 ## Overview of combinations
 
-| Scenario              | type of export  | target  | (in)direct  | error | hoisting  | `module.exports` of circular module |
-|-----------------------|-----------------|---------|-------------|-------|-----------|-------------------------------------|
-| regular               | default         | es5     | direct      | -     | no        |`{}`                                 |
-| regular es6           | default         | es6     | direct      |y[^1]  | no        |                                     |
-| regular es6 var       | default         | es6     | direct      |y[^1]  | yes       |                                     |
-| regular indirect      | default         | es5     | indirect    |y[^2]  | no        |                                     |
+| Scenario              | type of export  | target  | (in)direct              | error | hoisting  | `module.exports` of circular module |
+|-----------------------|-----------------|---------|-------------            |-------|-----------|-------------------------------------|
+| regular               | default         | es5     | direct                  | -     | no        |`{}`                                 |
+| regular es6           | default         | es6     | direct                  |y[^1]  | no        |`{ default: getterFn() }             |
+| regular es6 var       | default         | es6     | direct                  |y[^1]  | yes       |`{ default: getterFn() }             |
+| regular indirect      | default         | es5     | indirect, functions     |y[^2]  | no        |`{ default: expectedFn() }           |
+| regular named exports | named           | es5     | direct                  |y[^3]  | no        |`{ [namedExportName]: getterFn() }`  |
+| reg named exports es6 | named           | es5     | direct                  |y[^3]  | no        |`{ [namedExportName]: getterFn() }`  |
+| reg named indirect    | named           | es5
 
 
 [^1]: `Uncaught ReferenceError: Cannot access '__WEBPACK_DEFAULT_EXPORT__' before initialization`
-[^2]: `Uncaught TypeError: (0 , _moduleA__WEBPACK_IMPORTED_MODULE_0__.default) is not a function`
+[^2]: `Maximum call stack size exceeded`
+[^3]: `Uncaught ReferenceError: Cannot access '{{namedExportName}}' before initialization`
