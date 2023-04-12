@@ -1,8 +1,10 @@
-# Default export circ dep
+# Default export (es5) circ dep
 
 Now that we have basic understand of Webpack's module resolution system, it's time to understand how a circular dependency works.
 
 We use the same four files as on the [previous page](/): `entry.js`, `moduleA.js`, `moduleB.js` and `moduleC.js`. These are compiled into `dist/main.js`.
+
+**Note:** This example is only valid for [target `'es5'`](https://webpack.js.org/configuration/target/). We will discuss `'es6'` in a later page.
 
 <CH.Code>
 ```javascript entry.js

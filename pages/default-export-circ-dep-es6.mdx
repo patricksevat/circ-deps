@@ -1,0 +1,252 @@
+# Default exports circ dep (ES6)
+
+This example assumes you have followed along with the [basics](/), the [default export (es5) example](/default-export-circ-dep) and the [named exports example](/named-exports-circ-dep).
+
+**Note:** This example is only valid for [target `'es6'`](https://webpack.js.org/configuration/target/). We already covered the [default export (es5) example](/default-export-circ-dep).
+
+We use the exact same source code as in the [default export (es5) example](/default-export-circ-dep).
+
+<CH.Code>
+```javascript entry.js
+import foo from './moduleA';
+
+console.log(foo);
+```
+
+```javascript moduleA.js
+import c from './moduleC'
+
+const foo = c+'bar';
+export default foo;
+```
+
+```javascript moduleC.js
+import b from './moduleB'
+
+const baz = b+'baz';
+export default baz;
+```
+
+```javascript moduleB.js
+import foo from './moduleA';
+
+const bar = foo + 'bar';
+
+export default bar;
+```
+</CH.Code>
+
+However we changed the `target` in the webpack config:
+
+<CH.Code>
+```js regular/webpack.config.js
+module.exports = {
+  // ... omitted for brevity
+  target: ['web', 'es5'],
+}
+```
+
+---
+
+```js regular es6/webpack.config.js
+module.exports = {
+  // ... omitted for brevity
+  target: ['web', 'es6'],
+}
+```
+</CH.Code>
+
+## How does the circular dependency look like?
+
+We have an import chain where `moduleA.js` eventually depends on itself:
+
+```
+entry -> moduleA -> moduleC -> moduleB -> moduleA
+```
+
+And `moduleA.js` define a default export
+
+## How does Webpack handle this circular dependency with named exports?
+
+Follow on for a detailed explanation, but in short:
+
+* Similar to named exports, with es6 Webpack now defines a getter for `module.exports.default`
+* A module compiled to target es6 with default export that depends on itself will cause an error: `caught ReferenceError: Cannot access '__WEBPACK_DEFAULT_EXPORT__' before initialization`
+* This *might* cause your application to crash
+
+### In detail
+
+<CH.Spotlight>
+```js dist/main.js
+(() => {
+  "use strict";
+  var __webpack_modules__ = ({
+    "./src/regular es6/moduleA.js":
+      ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+        __webpack_require__.r(__webpack_exports__);
+        __webpack_require__.d(__webpack_exports__, {
+          "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+        });
+        var _moduleC__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__("./src/regular es6/moduleC.js");
+        const foo = _moduleC__WEBPACK_IMPORTED_MODULE_0__["default"] + 'bar';
+        const __WEBPACK_DEFAULT_EXPORT__ = (foo);
+      }),
+    "./src/regular es6/moduleB.js":
+      ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+        __webpack_require__.r(__webpack_exports__);
+        __webpack_require__.d(__webpack_exports__, {
+          "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+        });
+        var _moduleA__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__("./src/regular es6/moduleA.js");
+        const bar = _moduleA__WEBPACK_IMPORTED_MODULE_0__["default"] + 'bar';
+        const __WEBPACK_DEFAULT_EXPORT__ = (bar);
+      }),
+    "./src/regular es6/moduleC.js":
+      ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+        __webpack_require__.r(__webpack_exports__);
+        __webpack_require__.d(__webpack_exports__, {
+          "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+        });
+        var _moduleB__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__("./src/regular es6/moduleB.js");
+        const baz = _moduleB__WEBPACK_IMPORTED_MODULE_0__["default"] + 'baz';
+        const __WEBPACK_DEFAULT_EXPORT__ = (baz);
+      })
+  });
+
+  var __webpack_module_cache__ = {};
+  
+  function __webpack_require__(moduleId) {
+    var cachedModule = __webpack_module_cache__[moduleId];
+    if (cachedModule !== undefined) {
+      return cachedModule.exports;
+    }
+    var module = __webpack_module_cache__[moduleId] = {
+      exports: {}
+    };
+    __webpack_modules__[moduleId](module, module.exports, __webpack_require__);
+    return module.exports;
+  }
+
+  (() => {
+    __webpack_require__.d = (exports, definition) => {
+      for (var key in definition) {
+        if (__webpack_require__.o(definition, key) && !__webpack_require__.o(exports, key)) {
+          Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
+        }
+      }
+    };
+  })();
+
+  (() => {
+    __webpack_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
+  })();
+
+  (() => {
+    __webpack_require__.r = (exports) => {
+      if (typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+        Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
+      }
+      Object.defineProperty(exports, '__esModule', { value: true });
+    };
+  })();
+
+  var __webpack_exports__ = {};
+  
+  (() => {
+    __webpack_require__.r(__webpack_exports__);
+    var _moduleA__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__("./src/regular es6/moduleA.js");
+    console.log(_moduleA__WEBPACK_IMPORTED_MODULE_0__["default"]);
+  })();
+})()
+  ;
+```
+
+---
+
+#### Full file
+
+```js dist/main.js
+```
+
+---
+
+#### Requiring `moduleA.js` the first time (1)
+
+Similar to the previous examples, Webpack first looks in the cache and does not find a cache entry.
+
+Next, the preliminary exports are set: `module.exports = {}`
+
+And then the module function is executed.
+
+What is *new* is that within the module function, there is a bit of code that defines `module.exports.default` as a getter
+
+```js dist/main.js focus=7:9
+```
+
+---
+
+#### Requiring `moduleA.js` the first time (2)
+
+Similar to the named exports example, this getter is set directly on the module cache.
+
+If we were to set a breakpoint before line 10, the module cache would be:
+
+<details>
+  <summary>[Dropdown] module cache with breakpoint before line 10</summary>
+  
+  ```js
+  var __webpack_module_cache__ = {
+    "./src/regular named export/moduleA.js": {
+      exports: {
+        default: function () { return __WEBPACK_DEFAULT_EXPORT__; },
+      }
+    }
+  }
+  ```
+</details>
+
+And we also see that `__WEBPACK_DEFAULT_EXPORT__` will not be initialized till line 12;
+
+Let's fast forward a bit >>
+
+```js dist/main.js focus=5,7:9,12 mark=5[34:52]
+```
+
+---
+
+#### Requiring `moduleA.js` the second time (1)
+
+We have recursively called `__webpack_require__` a couple of times:
+
+1. entry -> `__webpack_require__('./src/regular es6/moduleA.js')`
+2. moduleA -> `__webpack_require__('./src/regular es6/moduleC.js')`
+3. moduleC -> `__webpack_require__('./src/regular es6/moduleB.js')`
+
+And we are now about to execute the `moduleB.js` code
+
+```js dist/main.js focus=15:23
+```
+
+---
+
+#### Requiring `moduleA.js` the second time (2)
+
+There now is a cache hit when requiring `moduleA`. The cache returns the export object containing the getter.
+
+However when we try to access the getter on line 21, we get an **error**:
+
+<span style={{color: "red"}}>Uncaught ReferenceError: Cannot access '__WEBPACK_DEFAULT_EXPORT__' before initialization</span>
+
+```js dist/main.js focus=21
+```
+
+</CH.Spotlight>
+
+Oops! None of the calls to `__webpack_require__()` finish, and the default export circular dependency might have just broken your app!
+
+## Take aways
+
+1. Webpack5 with target `'es6'` will set a getter for default exports
+2. With target `'es6'`, when the module which is depending on itself uses a default export, it will throw an error
+
+

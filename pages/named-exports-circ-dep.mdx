@@ -6,6 +6,8 @@ The full source code is very similar to the previous example, but now we have:
 - named imports in `entry.js` and `moduleB.js` 
 - named exports is `moduleA.js`
 
+**Note:** This example uses ES5, but the same is true for ES6
+
 <CH.Code>
 ```javascript entry.js
 import { namedA, namedWithImportedValue } from './moduleA';
@@ -55,7 +57,10 @@ And `moduleA.js` defines named exports
 
 Follow on for a detailed explanation, but in short:
 
-TODO:
+* Webpack creates getters for named exports
+* These getters reference variables that will be instantiated later
+* A circular dependency using named exports will result in an error: `Uncaught ReferenceError: Cannot access '{{namedExportName}}' before initialization`
+* This error *might* crash your application if not handled correctly
 
 ### In detail
 
@@ -226,7 +231,7 @@ And we are now about to execute the `moduleB.js` code
 
 #### Requiring `moduleA.js` the second time (2)
 
-There now is a cache hit when requiring `moduleA`. The cache returns the export object containing the setters.
+There now is a cache hit when requiring `moduleA`. The cache returns the export object containing the getters.
 
 However when we try to access the getter on line 21, we get an **error**:
 
@@ -237,7 +242,7 @@ However when we try to access the getter on line 21, we get an **error**:
 
 </CH.Spotlight>
 
-Oops! None of the calls to `__webpack_require__()` finish and the named circular dependency might have just broken your app!
+Oops! None of the calls to `__webpack_require__()` finish, and the named circular dependency might have just broken your app!
 
 ## Take aways
 
@@ -247,5 +252,5 @@ Oops! None of the calls to `__webpack_require__()` finish and the named circular
 
 ## Next example
 
-[Click here](/named-exports-circ-dep-e5) to visit a slight variation where we use ES5.
+Let's see how `es6` behaves vs `es5`. [Click here](/default-export-circ-dep-es6) for the default exports (es6) example
 

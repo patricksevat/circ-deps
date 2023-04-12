@@ -7,7 +7,9 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "next dev -p 4444",
     "build-regular": "yarn webpack -c src/regular/webpack.config.js",
+    "build-regular-es6": "yarn webpack -c \"src/regular es6/webpack.config.js\"",
     "build-named": "yarn webpack -c \"src/regular named export/webpack.config.js\"",
+    "build-named-es6": "yarn webpack -c \"src/regular named export es6/webpack.config.js\"",
     "build-regular-copied": "yarn webpack -c \"src/regular with copied circ dep/webpack.config.js\""
   },
   "keywords": [],

@@ -1,4 +1,4 @@
-# Circ dep with initialization error
+# Named export circ dep with initialization error
 
 ## The error msg
 
