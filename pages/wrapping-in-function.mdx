@@ -1,0 +1,314 @@
+# Exporting functions
+
+This example assumes you have followed along with:
+1. the [basics](/)
+2. the [default export (es5) example](/default-export-circ-dep)
+3. the [named exports example](/named-exports-circ-dep)
+4. the [default export (es6) example](/default-export-circ-dep-es6)
+
+TODO: validity es5 vs es6
+
+By now you should have gotten a good grasp on the key elements at play here:
+- `__webpack_module_cache__` which basically is a cache with the exports of each module
+- The preliminary setting of `module.exports = {}` before executing the module function
+- named exports and default exports (es6 only) which are converted to getters which reference variables which are instantiated later
+
+So what happens if you do not directly access value but use functions to ensure all modules are loaded cached, before reading values?
+Should that help with the getters?
+
+Let's find out
+
+## Every `default` export is a function
+
+Given these source files:
+
+<CH.Code>
+```javascript entry.js
+import foo from './moduleA';
+
+console.log(foo());
+```
+
+```javascript moduleA.js
+import c from './moduleC'
+
+const foo = () => c+'bar';
+export default foo;
+```
+
+```javascript moduleC.js
+import b from './moduleB'
+
+const baz = () => b()+'baz';
+export default baz;
+```
+
+```javascript moduleB.js
+import foo from './moduleA';
+
+const bar = foo() + 'bar';
+
+export default bar;
+```
+</CH.Code>
+
+Will we end up in an infinite loop?
+
+Yes.
+
+<CH.Spotlight>
+```js dist/main.js
+(function () {
+  "use strict";
+  var __webpack_modules__ = ({
+    "./src/regular indirect/moduleA.js":
+      (function (__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+        __webpack_require__.r(__webpack_exports__);
+        var _moduleC__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__("./src/regular indirect/moduleC.js");
+        const foo = () => (0, _moduleC__WEBPACK_IMPORTED_MODULE_0__["default"])() + 'bar';
+        __webpack_exports__["default"] = (foo);
+      }),
+    "./src/regular indirect/moduleB.js":
+      (function (__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+        __webpack_require__.r(__webpack_exports__);
+        var _moduleA__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__("./src/regular indirect/moduleA.js");
+        const bar = () => (0, _moduleA__WEBPACK_IMPORTED_MODULE_0__["default"])() + 'bar';
+        __webpack_exports__["default"] = (bar);
+      }),
+    "./src/regular indirect/moduleC.js":
+      (function (__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+        __webpack_require__.r(__webpack_exports__);
+        var _moduleB__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__("./src/regular indirect/moduleB.js");
+        const baz = () => (0, _moduleB__WEBPACK_IMPORTED_MODULE_0__["default"])() + 'baz';
+        __webpack_exports__["default"] = (baz);
+      })
+  });
+
+  var __webpack_module_cache__ = {};
+  
+  function __webpack_require__(moduleId) {
+    var cachedModule = __webpack_module_cache__[moduleId];
+    if (cachedModule !== undefined) {
+      return cachedModule.exports;
+    }
+    var module = __webpack_module_cache__[moduleId] = {
+      exports: {}
+    };
+    __webpack_modules__[moduleId](module, module.exports, __webpack_require__);
+    return module.exports;
+  }
+
+  !function () {
+    __webpack_require__.r = function (exports) {
+      if (typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+        Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
+      }
+      Object.defineProperty(exports, '__esModule', { value: true });
+    };
+  }();
+  
+  var __webpack_exports__ = {};
+  
+  !function () {
+    __webpack_require__.r(__webpack_exports__);
+    var _moduleA__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__("./src/regular indirect/moduleA.js");
+    console.log((0, _moduleA__WEBPACK_IMPORTED_MODULE_0__["default"])());
+  }();
+})()
+  ;
+```
+
+---
+
+#### Full file
+
+```js dist/main.js
+```
+
+---
+
+#### Second require of `moduleA.js`
+
+As all exports are functions, and none of the modules is immediately invoking an imported function, we are safely reaching line 55.
+
+All modules have their `module.exports.default` set to the correct function.
+
+But in this case that mean mayhem:
+
+`moduleA` calls `moduleC` which calls `moduleB` which calls `moduleA` into infinity.
+
+<span style={{color: 'red'}}>`Maximum call stack size exceeded`</span>
+
+```js dist/main.js focus=55
+```
+</CH.Spotlight>
+
+## Use named exports in `moduleA`
+
+Let's now create a variation where `moduleA` exports two named functions:
+
+<CH.Code>
+```javascript moduleA.js
+import c from './moduleC';
+
+const namedA = () => 'a';
+const namedWithImportedValue = () => c()+'b';
+
+export {
+  namedA,
+  namedWithImportedValue,
+}
+```
+
+```javascript moduleC.js
+import b from './moduleB'
+
+const baz = () => b()+'baz';
+export default baz;
+```
+
+```javascript moduleB.js
+import * as a from './moduleA'
+
+const bar = () => a.namedA() + 'bar';
+
+export default bar;
+```
+
+```javascript entry.js
+import { namedA, namedWithImportedValue } from './moduleA';
+
+console.log(({ namedA: namedA(), namedWithImportedValue: namedWithImportedValue() }));
+```
+</CH.Code>
+
+Let's see what happens now:
+
+<CH.Spotlight>
+```js dist/main.js
+(function () {
+  "use strict";
+  var __webpack_modules__ = ({
+    "./src/regular indirect named export/moduleA.js":
+      (function (__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+        __webpack_require__.r(__webpack_exports__);
+        __webpack_require__.d(__webpack_exports__, {
+          "namedA": function () { return namedA; },
+          "namedWithImportedValue": function () { return namedWithImportedValue; }
+        });
+        var _moduleC__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__("./src/regular indirect named export/moduleC.js");
+        const namedA = () => 'a';
+        const namedWithImportedValue = () => (0, _moduleC__WEBPACK_IMPORTED_MODULE_0__["default"])() + 'b';
+      }),
+    "./src/regular indirect named export/moduleB.js":
+      (function (__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+        __webpack_require__.r(__webpack_exports__);
+        var _moduleA__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__("./src/regular indirect named export/moduleA.js");
+        const bar = () => _moduleA__WEBPACK_IMPORTED_MODULE_0__.namedA() + 'bar';
+        __webpack_exports__["default"] = (bar);
+      }),
+    "./src/regular indirect named export/moduleC.js":
+      (function (__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+        __webpack_require__.r(__webpack_exports__);
+        var _moduleB__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__("./src/regular indirect named export/moduleB.js");
+        const baz = () => (0, _moduleB__WEBPACK_IMPORTED_MODULE_0__["default"])() + 'baz';
+        __webpack_exports__["default"] = (baz);
+      })
+  });
+
+  var __webpack_module_cache__ = {};
+
+  function __webpack_require__(moduleId) {
+    var cachedModule = __webpack_module_cache__[moduleId];
+    if (cachedModule !== undefined) {
+      return cachedModule.exports;
+    }
+    var module = __webpack_module_cache__[moduleId] = {
+      exports: {}
+    };
+    __webpack_modules__[moduleId](module, module.exports, __webpack_require__);
+    return module.exports;
+  }
+
+  !function () {
+    __webpack_require__.d = function (exports, definition) {
+      for (var key in definition) {
+        if (__webpack_require__.o(definition, key) && !__webpack_require__.o(exports, key)) {
+          Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
+        }
+      }
+    };
+  }();
+
+  !function () {
+    __webpack_require__.o = function (obj, prop) { return Object.prototype.hasOwnProperty.call(obj, prop); }
+  }();
+
+  !function () {
+    __webpack_require__.r = function (exports) {
+      if (typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+        Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
+      }
+      Object.defineProperty(exports, '__esModule', { value: true });
+    };
+  }();
+
+  var __webpack_exports__ = {};
+
+  !function () {
+    __webpack_require__.r(__webpack_exports__);
+    var _moduleA__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__("./src/regular indirect named export/moduleA.js");
+    console.log(({ namedA: (0, _moduleA__WEBPACK_IMPORTED_MODULE_0__.namedA)(), namedWithImportedValue: (0, _moduleA__WEBPACK_IMPORTED_MODULE_0__.namedWithImportedValue)() }));
+  }();
+})()
+  ;
+```
+
+---
+
+#### Full file
+
+```js dist/main.js
+```
+
+---
+
+#### Breaking the loop
+
+Like in the previous example, we safely reach line 73 as we do not invoke any of the functions while requiring other files.
+
+All modules have their `module.exports` correctly set and now we call `moduleA.namedWithImportedValue`.
+
+This time we do not end up in infinite loop as `moduleB` uses a function from `moduleA` which returns a static value.
+
+```js dist/main.js focus=73 focus=19,8,12
+```
+
+---
+
+#### Depending on yourself
+
+<details>
+  <summary>Console.log output from `entry.js`</summary>
+
+  ```js
+  { 
+    namedA: "a",
+    namedWithImportedValue: "abarbazb",
+  }
+  ```
+</details>
+
+<span style={{color: 'green'}}>In this scenario, it is save for `moduleA` to depend on itself!</span>
+
+```js dist/main.js focus=73
+```
+
+</CH.Spotlight>
+
+Of course, if `moduleB` would use `a.namedWithImportedValue()` in stead of `a.namedA()`, we would still end up in an infinite loop.
+
+## Takeaways
+
+1. Exporting only functions can lead to a max callsize exceeded error
+2. With named exports it's possible, but by no means guaranteed, to have a circular dependency without errors or other issues
