@@ -7,9 +7,9 @@ An overview of the various scenarios
 | Scenario              | type of export  | target  | (in)direct              | error       | hoisting  | `module.exports` of circular module |
 |-----------------------|-----------------|---------|-------------------------|---------    |-----------|-------------------------------------|
 | regular               | default         | es5     | direct                  | -           | no        |`{}`                                 |
-| regular es6           | default         | es6     | direct                  |y[^1]        | no        |`{ default: getterFn() }             |
-| regular es6 var       | default         | es6     | direct                  |y[^1]        | yes       |`{ default: getterFn() }             |
-| regular indirect      | default         | es5     | indirect, functions     |y[^2]        | no        |`{ default: expectedFn() }           |
+| regular es6           | default         | es6     | direct                  |y[^1]        | no        |`{ default: getterFn() }`            |
+| regular es6 var       | default         | es6     | direct                  |y[^1]        | yes       |`{ default: getterFn() }`            |
+| regular indirect      | default         | es5     | indirect, functions     |y[^2]        | no        |`{ default: expectedFn() }`          |
 | regular named exports | named           | es5     | direct                  |y[^3]        | no        |`{ [namedExportName]: getterFn() }`  |
 | reg named exports es6 | named           | es5     | direct                  |y[^3]        | no        |`{ [namedExportName]: getterFn() }`  |
 | reg named indirect    | named           | es5     | indirect, function      |possibly[^4] | no        |`{ [namedExportName]: getterFn() }`  |
