@@ -14,6 +14,8 @@
     "build-regular-indirect-es6": "yarn webpack -c \"src/regular indirect es6/webpack.config.js\"",
     "build-regular-indirect-named": "yarn webpack -c \"src/regular indirect named export/webpack.config.js\"",
     "build-regular-indirect-named-es6": "yarn webpack -c \"src/regular indirect named export es6/webpack.config.js\"",
+    "build-regular-chunks-entrypoint-dependencies": "yarn webpack -c \"src/regular chunks entrypoint dependencies/webpack.config.js\"",
+    "build-regular-chunks-entrypoint-dependencies-script-order": "yarn webpack -c \"src/regular chunks entrypoint dependencies shuffle scripts/webpack.config.js\"",
     "build-named": "yarn webpack -c \"src/regular named export/webpack.config.js\"",
     "build-named-es6": "yarn webpack -c \"src/regular named export es6/webpack.config.js\"",
     "build-class": "yarn webpack -c \"src/class instance/webpack.config.js\"",
