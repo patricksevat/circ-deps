@@ -19,6 +19,7 @@
     "build-regular-chunks-dynamic": "yarn webpack -c \"src/regular chunks dynamic/webpack.config.js\"",
     "build-named": "yarn webpack -c \"src/regular named export/webpack.config.js\"",
     "build-named-es6": "yarn webpack -c \"src/regular named export es6/webpack.config.js\"",
+    "build-named-dynamic": "yarn webpack -c \"src/regular named export dynamic/webpack.config.js\"",
     "build-class": "yarn webpack -c \"src/class instance/webpack.config.js\"",
     "build-class-named": "yarn webpack -c \"src/class instance named export/webpack.config.js\"",
     "build-class-indirect-named": "yarn webpack -c \"src/class instance indirect named/webpack.config.js\"",
