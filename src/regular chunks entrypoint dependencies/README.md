@@ -82,3 +82,10 @@ Since `entry.js` dependsOn `moduleABC.js` the order of script tags is:
 	- push to `global["webpackChunkcirc_deps_repro_minimal"].push()`	
 	- mark the chunk as installed
 	- do another pass in the deferred function, but no more open chunks to be processed
+
+
+	### TLDR; circ deps
+
+	Even though this scenario is much more complex due to the logic around resolving the chunks and their dependencies, the core logic around module resolution is the same: all modules are (in)directly read from `__webpack_modules__` and `__webpack_require__` behaves the same.
+
+	TODO: see if a circ dep amongst different chunks would complicate things? Probably not, since execution of entries are deferred till their deps are solved
