@@ -1,3 +1,3 @@
-import('./moduleA.js').then((module) => {
+import('./moduleA.js' /* webpackChunkName: "dynamicImportChunk" */).then((module) => {
   console.log(module.default);
 })

@@ -2,8 +2,7 @@ const path = require('path')
 
 module.exports = {
   entry: {
-    chunkEntry: { import: './src/regular chunks dynamic/entry', dependOn: ['chunkABC'] },
-    chunkABC: { import: './src/regular chunks dynamic/moduleA' }
+    chunkEntry: { import: './src/regular chunks dynamic/entry' }
   },
   output: {
     path: path.resolve(__dirname, 'dist')
