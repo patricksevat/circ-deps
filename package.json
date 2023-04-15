@@ -24,7 +24,8 @@
     "build-class": "yarn webpack -c \"src/class instance/webpack.config.js\"",
     "build-class-named": "yarn webpack -c \"src/class instance named export/webpack.config.js\"",
     "build-class-indirect-named": "yarn webpack -c \"src/class instance indirect named/webpack.config.js\"",
-    "build-regular-copied": "yarn webpack -c \"src/regular with copied circ dep/webpack.config.js\""
+    "build-regular-copied": "yarn webpack -c \"src/regular with copied circ dep/webpack.config.js\"",
+    "build-direct-example": "yarn webpack -c \"src/direct indirect example/webpack.config.js\""
   },
   "keywords": [],
   "author": "",

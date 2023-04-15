@@ -4,18 +4,130 @@ An overview of the various scenarios
 
 ## Overview of combinations
 
-| Scenario              | type of export  | target  | (in)direct              | error       | hoisting  | `module.exports` of circular module |
-|-----------------------|-----------------|---------|-------------------------|---------    |-----------|-------------------------------------|
-| regular               | default         | es5     | direct                  | -           | no        |`{}`                                 |
-| regular es6           | default         | es6     | direct                  |y[^1]        | no        |`{ default: getterFn() }`            |
-| regular es6 var       | default         | es6     | direct                  |y[^1]        | yes       |`{ default: getterFn() }`            |
-| regular indirect      | default         | es5     | indirect, functions     |y[^2]        | no        |`{ default: expectedFn() }`          |
-| regular named exports | named           | es5     | direct                  |y[^3]        | no        |`{ [namedExportName]: getterFn() }`  |
-| reg named exports es6 | named           | es5     | direct                  |y[^3]        | no        |`{ [namedExportName]: getterFn() }`  |
-| reg named indirect    | named           | es5     | indirect, function      |possibly[^4] | no        |`{ [namedExportName]: getterFn() }`  |
+| Scenario                              | type of export  | target  | (in)direct              | error       | hoisting  | `module.exports` of circular module |
+|---------------------------------------|-----------------|---------|-------------------------|---------    |-----------|-------------------------------------|
+| regular                               | default         | es5     | direct                  | -           | no        |`{}`                                 |
+| regular es6                           | default         | es6     | direct                  |y[^1]        | no        |`{ default: getterFn() }`            |
+| regular es6 var                       | default         | es6     | direct                  |y[^1]        | yes       |`{ default: getterFn() }`            |
+| regular indirect                      | default         | es5     | indirect, functions     |y[^2]        | no        |`{ default: expectedFn() }`          |
+| regular named exports                 | named           | es5     | direct                  |y[^3]        | no        |`{ [namedExportName]: getterFn() }`  |
+| named exports es6                     | named           | es6     | direct                  |y[^3]        | no        |`{ [namedExportName]: getterFn() }`  |
+| named indirect                        | named           | es5     | indirect, function      |possibly[^4] | no        |`{ [namedExportName]: getterFn() }`  |
+| class instance regular                | default         | es5     | direct                  |y[^5]        | no        |`{}`                                 |
+| class instance named                  | default         | es5     | direct                  |y[^3]        | no        |`{ [namedExportName]: getterFn() }`  |
+| class instance indirect named         | named           | es5     | indirect                |possibly[^4] | no        |`{ [namedExportName]: getterFn() }`  |
+| regular chunks entryPoints            | default         | es5     | direct                  | -           | no        |`{}`                                 |
+| regular chunks dynamic import         | default         | es5     | direct                  | -           | no        |`{}`                                 |
+| named chunks dynamic import           | named           | es5     | indirect dynamic import |possibly[^4] | no        |`{ [namedExportName]: getterFn() }`  |
+| named chunks dynamic import ESM       | named           | es6[^6] | indirect dynamic import |possibly[^4] | no        |`{ [namedExportName]: getterFn() }`  |
 
 
 [^1]: `Uncaught ReferenceError: Cannot access '__WEBPACK_DEFAULT_EXPORT__' before initialization`
 [^2]: `Maximum call stack size exceeded`
 [^3]: `Uncaught ReferenceError: Cannot access '{{namedExportName}}' before initialization`
 [^4]: depends on which named export is being called, if it returns a static value, no error or issues. If it calls a module within the circ dep chain, it will lead to `Maximum call stack size exceeded`
+[^5]: `cannot read {{propertyName}} of undefined`. The issue here is that the class is not exported yet, due to preliminary `module.exports = {}`
+[^6]: also setting `output.module = true` and `experiments.outputModule = true`
+
+## Legend
+
+### `default` vs `named`
+
+What kind of [ES Module export statement](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/export) are we using.
+
+Default: `export default`
+
+Named: `export myVar` or `export { foo: varFoo, bar: varBar }`
+
+This is important because circular dependencies with `default` exports are `undefined` when reading directly and using es5. 
+This can lead to unexpected behavior, but will less likely lead to app-crashing errors.
+
+Circular dependencies with named exports use getters and when used directly, will lead to 
+`Uncaught ReferenceError: Cannot access '{{namedExportName}}' before initialization` errors which can crash your app if not caught properly.
+
+### target
+
+Which [Webpack output target](https://webpack.js.org/configuration/target/) are we setting?
+
+The main difference here is that with `es6` and later, `default` exports are treated as named exports, using a getter. 
+This can lead to `Uncaught ReferenceError: Cannot access '__WEBPACK_DEFAULT_EXPORT__' before initialization`
+
+### (in)direct
+
+Are we directly reading an imported value or are we deferring that in some way?
+
+Direct read:
+```import {foo} from './foo'
+
+const bar = foo + 'bar'
+
+export default bar
+```
+
+Indirect read:
+```import {foo} from './foo'
+
+function bar() {
+  return foo + 'bar'
+} 
+
+// or
+
+function dynamicImportBaz() {
+  return import('./baz').then((module) => {
+    return module.default + 'bar'
+  })
+}
+
+export default bar
+// export default dynamicImportBaz
+```
+
+The moment we access an imported value matters:
+
+If we access a value from a circular module directly, it's exports will not be set yet. It will have the preliminary `module.exports = {}`.
+However, if we read values from a circular module indirectly, we are able to finish processing all modules. 
+
+The finishing part is important because webpack holds a *reference* to a module's `module.exports` and that can change once processing all modules is done:
+
+```js entry.js
+// needed to ensure right order of module processing for this example
+import './moduleA.js';
+
+import { direct, indirectFn } from './moduleB.js'
+
+// returns:
+// {
+//  direct: 'useImportedValue from moduleA: undefined', 
+//  indirectFn: 'useImportedValue from moduleA: bStatic imported from ./moduleB'
+// }
+console.log({direct, indirectFn: indirectFn() })
+```
+
+```js moduleA.js
+import { bStatic } from './moduleB'
+
+const useStaticValueFromB = `${bStatic} imported from ./moduleB`;
+
+export default useStaticValueFromB;
+```
+
+```js moduleB.js
+import useImportedValue from './moduleA';
+
+// When we read `useImportedValue` now, `moduleA` has preliminary `module.exports = {}`;
+const direct = `useImportedValue from moduleA: ${useImportedValue}`;
+
+// We only read `useImportedValue` when this function is called in `entry.js`
+const indirectFn = () => `useImportedValue from moduleA: ${useImportedValue}`;
+
+const bStatic = 'bStatic'
+
+export {direct, indirectFn, bStatic};
+```
+
+In the above example, by the time that we call `indirectFn()` all modules have been fully processed by Webpack
+and have their `module.exports` set to the correct value. 
+
+!!! It is important to realize that the `module.exports` for `moduleA.js` are different when reading it in `moduleB.js` in direct, vs reading it in `entry.js`
+
