@@ -4,30 +4,171 @@ An overview of the various scenarios
 
 ## Overview of combinations
 
-| Scenario                              | type of export  | target  | (in)direct              | error       | hoisting  | `module.exports` of circular module |
-|---------------------------------------|-----------------|---------|-------------------------|---------    |-----------|-------------------------------------|
-| regular                               | default         | es5     | direct                  | -           | no        |`{}`                                 |
-| regular es6                           | default         | es6     | direct                  |y[^1]        | no        |`{ default: getterFn() }`            |
-| regular es6 var                       | default         | es6     | direct                  |y[^1]        | yes       |`{ default: getterFn() }`            |
-| regular indirect                      | default         | es5     | indirect, functions     |y[^2]        | no        |`{ default: expectedFn() }`          |
-| regular named exports                 | named           | es5     | direct                  |y[^3]        | no        |`{ [namedExportName]: getterFn() }`  |
-| named exports es6                     | named           | es6     | direct                  |y[^3]        | no        |`{ [namedExportName]: getterFn() }`  |
-| named indirect                        | named           | es5     | indirect, function      |possibly[^4] | no        |`{ [namedExportName]: getterFn() }`  |
-| class instance regular                | default         | es5     | direct                  |y[^5]        | no        |`{}`                                 |
-| class instance named                  | default         | es5     | direct                  |y[^3]        | no        |`{ [namedExportName]: getterFn() }`  |
-| class instance indirect named         | named           | es5     | indirect                |possibly[^4] | no        |`{ [namedExportName]: getterFn() }`  |
-| regular chunks entryPoints            | default         | es5     | direct                  | -           | no        |`{}`                                 |
-| regular chunks dynamic import         | default         | es5     | direct                  | -           | no        |`{}`                                 |
-| named chunks dynamic import           | named           | es5     | indirect dynamic import |possibly[^4] | no        |`{ [namedExportName]: getterFn() }`  |
-| named chunks dynamic import ESM       | named           | es6[^6] | indirect dynamic import |possibly[^4] | no        |`{ [namedExportName]: getterFn() }`  |
+<table>
+<thead>
+<tr>
+<th>Scenario</th>
+<th>type of export</th>
+<th>target</th>
+<th>(in)direct</th>
+<th>error</th>
+<th>hoisting</th>
+<th>`module.exports` of circular module</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>regular</td>
+<td>default</td>
+<td>es5</td>
+<td>direct</td>
+<td>-</td>
+<td>no</td>
+<td>`{}`</td>
+</tr>
+<tr>
+<td>regular es6</td>
+<td>default</td>
+<td>es6</td>
+<td>direct</td>
+<td>y<sup><a href="#user-content-fn-1-39e27ae64b7d78fdbf3ce2275bebb171" id="user-content-fnref-1-39e27ae64b7d78fdbf3ce2275bebb171" data-footnote-ref="" aria-describedby="footnote-label">1</a></sup></td>
+<td>no</td>
+<td>`{ default: getterFn() }`</td>
+</tr>
+<tr>
+<td>regular es6 var</td>
+<td>default</td>
+<td>es6</td>
+<td>direct</td>
+<td>y<sup><a href="#user-content-fn-1-39e27ae64b7d78fdbf3ce2275bebb171" id="user-content-fnref-1-2-39e27ae64b7d78fdbf3ce2275bebb171" data-footnote-ref="" aria-describedby="footnote-label">1</a></sup></td>
+<td>yes</td>
+<td>`{ default: getterFn() }`</td>
+</tr>
+<tr>
+<td>regular indirect</td>
+<td>default</td>
+<td>es5</td>
+<td>indirect, functions</td>
+<td>y<sup><a href="#user-content-fn-2-39e27ae64b7d78fdbf3ce2275bebb171" id="user-content-fnref-2-39e27ae64b7d78fdbf3ce2275bebb171" data-footnote-ref="" aria-describedby="footnote-label">2</a></sup></td>
+<td>no</td>
+<td>`{ default: expectedFn() }`</td>
+</tr>
+<tr>
+<td>regular named exports</td>
+<td>named</td>
+<td>es5</td>
+<td>direct</td>
+<td>y<sup><a href="#user-content-fn-3-39e27ae64b7d78fdbf3ce2275bebb171" id="user-content-fnref-3-39e27ae64b7d78fdbf3ce2275bebb171" data-footnote-ref="" aria-describedby="footnote-label">3</a></sup></td>
+<td>no</td>
+<td>`{ [namedExportName]: getterFn() }`</td>
+</tr>
+<tr>
+<td>named exports es6</td>
+<td>named</td>
+<td>es6</td>
+<td>direct</td>
+<td>y<sup><a href="#user-content-fn-3-39e27ae64b7d78fdbf3ce2275bebb171" id="user-content-fnref-3-2-39e27ae64b7d78fdbf3ce2275bebb171" data-footnote-ref="" aria-describedby="footnote-label">3</a></sup></td>
+<td>no</td>
+<td>`{ [namedExportName]: getterFn() }`</td>
+</tr>
+<tr>
+<td>named indirect</td>
+<td>named</td>
+<td>es5</td>
+<td>indirect, function</td>
+<td>possibly<sup><a href="#user-content-fn-4-39e27ae64b7d78fdbf3ce2275bebb171" id="user-content-fnref-4-39e27ae64b7d78fdbf3ce2275bebb171" data-footnote-ref="" aria-describedby="footnote-label">4</a></sup></td>
+<td>no</td>
+<td>`{ [namedExportName]: getterFn() }`</td>
+</tr>
+<tr>
+<td>class instance regular</td>
+<td>default</td>
+<td>es5</td>
+<td>direct</td>
+<td>y<sup><a href="#user-content-fn-5-39e27ae64b7d78fdbf3ce2275bebb171" id="user-content-fnref-5-39e27ae64b7d78fdbf3ce2275bebb171" data-footnote-ref="" aria-describedby="footnote-label">5</a></sup></td>
+<td>no</td>
+<td>`{}`</td>
+</tr>
+<tr>
+<td>class instance named</td>
+<td>default</td>
+<td>es5</td>
+<td>direct</td>
+<td>y<sup><a href="#user-content-fn-3-39e27ae64b7d78fdbf3ce2275bebb171" id="user-content-fnref-3-3-39e27ae64b7d78fdbf3ce2275bebb171" data-footnote-ref="" aria-describedby="footnote-label">3</a></sup></td>
+<td>no</td>
+<td>`{ [namedExportName]: getterFn() }`</td>
+</tr>
+<tr>
+<td>class instance indirect named</td>
+<td>named</td>
+<td>es5</td>
+<td>indirect</td>
+<td>possibly<sup><a href="#user-content-fn-4-39e27ae64b7d78fdbf3ce2275bebb171" id="user-content-fnref-4-2-39e27ae64b7d78fdbf3ce2275bebb171" data-footnote-ref="" aria-describedby="footnote-label">4</a></sup></td>
+<td>no</td>
+<td>`{ [namedExportName]: getterFn() }`</td>
+</tr>
+<tr>
+<td>regular chunks entryPoints</td>
+<td>default</td>
+<td>es5</td>
+<td>direct</td>
+<td>-</td>
+<td>no</td>
+<td>`{}`</td>
+</tr>
+<tr>
+<td>regular chunks dynamic import</td>
+<td>default</td>
+<td>es5</td>
+<td>direct</td>
+<td>-</td>
+<td>no</td>
+<td>`{}`</td>
+</tr>
+<tr>
+<td>named chunks dynamic import</td>
+<td>named</td>
+<td>es5</td>
+<td>indirect dynamic import</td>
+<td>possibly<sup><a href="#user-content-fn-4-39e27ae64b7d78fdbf3ce2275bebb171" id="user-content-fnref-4-3-39e27ae64b7d78fdbf3ce2275bebb171" data-footnote-ref="" aria-describedby="footnote-label">4</a></sup></td>
+<td>no</td>
+<td>`{ [namedExportName]: getterFn() }`</td>
+</tr>
+<tr>
+<td>named chunks dynamic import ESM</td>
+<td>named</td>
+<td>es6<sup><a href="#user-content-fn-6-39e27ae64b7d78fdbf3ce2275bebb171" id="user-content-fnref-6-39e27ae64b7d78fdbf3ce2275bebb171" data-footnote-ref="" aria-describedby="footnote-label">6</a></sup></td>
+<td>indirect dynamic import</td>
+<td>possibly<sup><a href="#user-content-fn-4-39e27ae64b7d78fdbf3ce2275bebb171" id="user-content-fnref-4-4-39e27ae64b7d78fdbf3ce2275bebb171" data-footnote-ref="" aria-describedby="footnote-label">4</a></sup></td>
+<td>no</td>
+<td>`{ [namedExportName]: getterFn() }`</td>
+</tr>
+</tbody>
+</table>
 
-
-[^1]: `Uncaught ReferenceError: Cannot access '__WEBPACK_DEFAULT_EXPORT__' before initialization`
-[^2]: `Maximum call stack size exceeded`
-[^3]: `Uncaught ReferenceError: Cannot access '{{namedExportName}}' before initialization`
-[^4]: depends on which named export is being called, if it returns a static value, no error or issues. If it calls a module within the circ dep chain, it will lead to `Maximum call stack size exceeded`
-[^5]: `cannot read {{propertyName}} of undefined`. The issue here is that the class is not exported yet, due to preliminary `module.exports = {}`
-[^6]: also setting `output.module = true` and `experiments.outputModule = true`
+<section data-footnotes="" className="footnotes">
+<h2 id="footnote-label" className="sr-only" dir="auto">Footnotes</h2>
+<ol dir="auto">
+<li id="user-content-fn-1-39e27ae64b7d78fdbf3ce2275bebb171">
+<p dir="auto">`Uncaught ReferenceError: Cannot access '__WEBPACK_DEFAULT_EXPORT__' before initialization` <a href="#user-content-fnref-1-39e27ae64b7d78fdbf3ce2275bebb171" data-footnote-backref="" aria-label="Back to reference 1" className="data-footnote-backref"><g-emoji className="g-emoji" alias="leftwards_arrow_with_hook" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/21a9.png">↩</g-emoji></a> <a href="#user-content-fnref-1-2-39e27ae64b7d78fdbf3ce2275bebb171" data-footnote-backref="" aria-label="Back to reference 1-2" className="data-footnote-backref"><g-emoji className="g-emoji" alias="leftwards_arrow_with_hook" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/21a9.png">↩</g-emoji><sup>2</sup></a></p>
+</li>
+<li id="user-content-fn-2-39e27ae64b7d78fdbf3ce2275bebb171">
+<p dir="auto">`Maximum call stack size exceeded` <a href="#user-content-fnref-2-39e27ae64b7d78fdbf3ce2275bebb171" data-footnote-backref="" aria-label="Back to reference 2" className="data-footnote-backref"><g-emoji className="g-emoji" alias="leftwards_arrow_with_hook" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/21a9.png">↩</g-emoji></a></p>
+</li>
+<li id="user-content-fn-3-39e27ae64b7d78fdbf3ce2275bebb171">
+<p dir="auto">`Uncaught ReferenceError: Cannot access '{{namedExportName}}' before initialization` <a href="#user-content-fnref-3-39e27ae64b7d78fdbf3ce2275bebb171" data-footnote-backref="" aria-label="Back to reference 3" className="data-footnote-backref"><g-emoji className="g-emoji" alias="leftwards_arrow_with_hook" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/21a9.png">↩</g-emoji></a> <a href="#user-content-fnref-3-2-39e27ae64b7d78fdbf3ce2275bebb171" data-footnote-backref="" aria-label="Back to reference 3-2" className="data-footnote-backref"><g-emoji className="g-emoji" alias="leftwards_arrow_with_hook" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/21a9.png">↩</g-emoji><sup>2</sup></a> <a href="#user-content-fnref-3-3-39e27ae64b7d78fdbf3ce2275bebb171" data-footnote-backref="" aria-label="Back to reference 3-3" className="data-footnote-backref"><g-emoji className="g-emoji" alias="leftwards_arrow_with_hook" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/21a9.png">↩</g-emoji><sup>3</sup></a></p>
+</li>
+<li id="user-content-fn-4-39e27ae64b7d78fdbf3ce2275bebb171">
+<p dir="auto">depends on which named export is being called, if it returns a static value, no error or issues. If it calls a module within the circ dep chain, it will lead to `Maximum call stack size exceeded` <a href="#user-content-fnref-4-39e27ae64b7d78fdbf3ce2275bebb171" data-footnote-backref="" aria-label="Back to reference 4" className="data-footnote-backref"><g-emoji className="g-emoji" alias="leftwards_arrow_with_hook" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/21a9.png">↩</g-emoji></a> <a href="#user-content-fnref-4-2-39e27ae64b7d78fdbf3ce2275bebb171" data-footnote-backref="" aria-label="Back to reference 4-2" className="data-footnote-backref"><g-emoji className="g-emoji" alias="leftwards_arrow_with_hook" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/21a9.png">↩</g-emoji><sup>2</sup></a> <a href="#user-content-fnref-4-3-39e27ae64b7d78fdbf3ce2275bebb171" data-footnote-backref="" aria-label="Back to reference 4-3" className="data-footnote-backref"><g-emoji className="g-emoji" alias="leftwards_arrow_with_hook" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/21a9.png">↩</g-emoji><sup>3</sup></a> <a href="#user-content-fnref-4-4-39e27ae64b7d78fdbf3ce2275bebb171" data-footnote-backref="" aria-label="Back to reference 4-4" className="data-footnote-backref"><g-emoji className="g-emoji" alias="leftwards_arrow_with_hook" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/21a9.png">↩</g-emoji><sup>4</sup></a></p>
+</li>
+<li id="user-content-fn-5-39e27ae64b7d78fdbf3ce2275bebb171">
+<p dir="auto">`cannot read {{propertyName}} of undefined`. The issue here is that the class is not exported yet, due to preliminary `module.exports = {}` <a href="#user-content-fnref-5-39e27ae64b7d78fdbf3ce2275bebb171" data-footnote-backref="" aria-label="Back to reference 5" className="data-footnote-backref"><g-emoji className="g-emoji" alias="leftwards_arrow_with_hook" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/21a9.png">↩</g-emoji></a></p>
+</li>
+<li id="user-content-fn-6-39e27ae64b7d78fdbf3ce2275bebb171">
+<p dir="auto">also setting `output.module = true` and `experiments.outputModule = true` <a href="#user-content-fnref-6-39e27ae64b7d78fdbf3ce2275bebb171" data-footnote-backref="" aria-label="Back to reference 6" className="data-footnote-backref"><g-emoji className="g-emoji" alias="leftwards_arrow_with_hook" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/21a9.png">↩</g-emoji></a></p>
+</li>
+</ol>
+</section>
 
 ## Legend
 
@@ -57,15 +198,20 @@ This can lead to `Uncaught ReferenceError: Cannot access '__WEBPACK_DEFAULT_EXPO
 Are we directly reading an imported value or are we deferring that in some way?
 
 Direct read:
-```import {foo} from './foo'
+```js direct.js
+import {foo} from './foo'
 
+// directly reading and using `foo`. 
+// If the `module.exports` for `foo.js` are not set correctly (due to a circ dep), 
+// we might get unexpected behavior
 const bar = foo + 'bar'
 
 export default bar
 ```
 
 Indirect read:
-```import {foo} from './foo'
+```js indirect.js
+import {foo} from './foo'
 
 function bar() {
   return foo + 'bar'
@@ -96,11 +242,8 @@ import './moduleA.js';
 
 import { direct, indirectFn } from './moduleB.js'
 
-// returns:
-// {
-//  direct: 'useImportedValue from moduleA: undefined', 
-//  indirectFn: 'useImportedValue from moduleA: bStatic imported from ./moduleB'
-// }
+// All imports have been resolved and processed
+// ModuleA's `module.exports` is correctly set: `{ default: 'bStatic imported from ./moduleB'}` 
 console.log({direct, indirectFn: indirectFn() })
 ```
 
@@ -115,19 +258,19 @@ export default useStaticValueFromB;
 ```js moduleB.js
 import useImportedValue from './moduleA';
 
-// When we read `useImportedValue` now, `moduleA` has preliminary `module.exports = {}`;
-const direct = `useImportedValue from moduleA: ${useImportedValue}`;
+// ModuleA's `module.exports` is preliminary set: `{}` 
+const direct = useImportedValue;
 
 // We only read `useImportedValue` when this function is called in `entry.js`
-const indirectFn = () => `useImportedValue from moduleA: ${useImportedValue}`;
+const indirectFn = () => useImportedValue;
 
 const bStatic = 'bStatic'
 
 export {direct, indirectFn, bStatic};
 ```
 
-In the above example, by the time that we call `indirectFn()` all modules have been fully processed by Webpack
+In the above example, by the time that we call `indirectFn()` in `entry.js` all modules have been fully processed by Webpack
 and have their `module.exports` set to the correct value. 
 
-!!! It is important to realize that the `module.exports` for `moduleA.js` are different when reading it in `moduleB.js` in direct, vs reading it in `entry.js`
-
+It is important to realize that `module.exports` for `moduleA.js` is different when reading it in `moduleB.js` in direct, 
+vs reading it in `entry.js` after all imports have been resolved.

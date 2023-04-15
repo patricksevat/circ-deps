@@ -1,0 +1,28 @@
+Note: having a little issue to get `https://github.com/remarkjs/remark-gfm` under CJS, 
+so as a quick workaround, I copy over the table HTML from Github and paste it in the overview.mdx page
+
+
+| Scenario                              | type of export  | target  | (in)direct              | error       | hoisting  | `module.exports` of circular module |
+|---------------------------------------|-----------------|---------|-------------------------|---------    |-----------|-------------------------------------|
+| regular                               | default         | es5     | direct                  | -           | no        |`{}`                                 |
+| regular es6                           | default         | es6     | direct                  |y[^1]        | no        |`{ default: getterFn() }`            |
+| regular es6 var                       | default         | es6     | direct                  |y[^1]        | yes       |`{ default: getterFn() }`            |
+| regular indirect                      | default         | es5     | indirect, functions     |y[^2]        | no        |`{ default: expectedFn() }`          |
+| regular named exports                 | named           | es5     | direct                  |y[^3]        | no        |`{ [namedExportName]: getterFn() }`  |
+| named exports es6                     | named           | es6     | direct                  |y[^3]        | no        |`{ [namedExportName]: getterFn() }`  |
+| named indirect                        | named           | es5     | indirect, function      |possibly[^4] | no        |`{ [namedExportName]: getterFn() }`  |
+| class instance regular                | default         | es5     | direct                  |y[^5]        | no        |`{}`                                 |
+| class instance named                  | default         | es5     | direct                  |y[^3]        | no        |`{ [namedExportName]: getterFn() }`  |
+| class instance indirect named         | named           | es5     | indirect                |possibly[^4] | no        |`{ [namedExportName]: getterFn() }`  |
+| regular chunks entryPoints            | default         | es5     | direct                  | -           | no        |`{}`                                 |
+| regular chunks dynamic import         | default         | es5     | direct                  | -           | no        |`{}`                                 |
+| named chunks dynamic import           | named           | es5     | indirect dynamic import |possibly[^4] | no        |`{ [namedExportName]: getterFn() }`  |
+| named chunks dynamic import ESM       | named           | es6[^6] | indirect dynamic import |possibly[^4] | no        |`{ [namedExportName]: getterFn() }`  |
+
+
+[^1]: `Uncaught ReferenceError: Cannot access '__WEBPACK_DEFAULT_EXPORT__' before initialization`
+[^2]: `Maximum call stack size exceeded`
+[^3]: `Uncaught ReferenceError: Cannot access '{{namedExportName}}' before initialization`
+[^4]: depends on which named export is being called, if it returns a static value, no error or issues. If it calls a module within the circ dep chain, it will lead to `Maximum call stack size exceeded`
+[^5]: `cannot read {{propertyName}} of undefined`. The issue here is that the class is not exported yet, due to preliminary `module.exports = {}`
+[^6]: also setting `output.module = true` and `experiments.outputModule = true`
