@@ -1,7 +1,7 @@
 import useImportedValue from './moduleA';
 
-const direct = `useImportedValue from moduleA: ${useImportedValue}`;
-const indirectFn = () => `useImportedValue from moduleA: ${useImportedValue}`;
+const direct = useImportedValue;
+const indirectFn = () => useImportedValue;
 
 const bStatic = 'bStatic'
 

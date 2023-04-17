@@ -312,3 +312,14 @@ Of course, if `moduleB` would use `a.namedWithImportedValue()` in stead of `a.na
 
 1. Exporting only functions can lead to a max callsize exceeded error
 2. With named exports it's possible, but by no means guaranteed, to have a circular dependency without errors or other issues
+
+## Next
+
+We will look at some variations on top of the examples so far to see if they make a difference.
+
+We will visit:
+
+- classes
+- chunks via multiple entrypoints and `dependsOn`
+- chunks via dynamic imports (`import('./moduleA.js')`)
+- CommonJS vs ES Modules

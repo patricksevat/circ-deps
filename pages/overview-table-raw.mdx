@@ -26,3 +26,4 @@ so as a quick workaround, I copy over the table HTML from Github and paste it in
 [^4]: depends on which named export is being called, if it returns a static value, no error or issues. If it calls a module within the circ dep chain, it will lead to `Maximum call stack size exceeded`
 [^5]: `cannot read {{propertyName}} of undefined`. The issue here is that the class is not exported yet, due to preliminary `module.exports = {}`
 [^6]: also setting `output.module = true` and `experiments.outputModule = true`
+

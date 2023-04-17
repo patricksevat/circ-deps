@@ -2,48 +2,22 @@
 
 This repo showcases a couple different ways how circular dependencies are being handled by Webpack
 
-## Got to know before continuing!
+## Interactive explainer
 
-The main thing you need to know about Webpack in the context of circular dependencies is how it handles module dependencies.
+If you are just interested in learning how circular dependencies in Webpack work, the [explainer app](https://circ-deps.vercel.app/) is made for you
 
-There are a couple elements in play:
+## The src examples
 
-#### The `__webpack_modules__` variable
+- All src examples can be built by using the accompanying script in `package.json`
+  - It will output to the `src/{exampleName}/dist` folder
+  - Webpack will add its own comments to the generated files. I use [a VS Code extension](https://marketplace.visualstudio.com/items?itemName=jinpeng.remove-comments-vscode) to remove comments manually before committing
+  - I'll format manually using JS language features before committing as well
+  - Sometimes I'll add some empty lines for readability
+- Almost all src examples can be run locally by opening the `dist/html` file. This will allow you to set your own breakpoints to explore that example
+  - The only exception is `regular named export dynamic esm` which requires a a small server to be spinned up: `npx http-server "./src/regular named export dynamic esm/dist"`
 
-This variable is an array or object which contains the source code for a particular file.
+## The explainer app
 
-For example, source file
+The explainer app is a simple NextJS app which uses [CodeHike](https://codehike.org/) for the code examples.
 
-```
-import b from './b'
-
-const baz = b+'baz';
-export default baz;
-```
-
-is added to `__webpack_modules__`, like this:
-
-```
-var __webpack_modules__ = ({
-  "./src/regular with copied circ dep/c.js": (
-    function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
-      __webpack_require__.r(__webpack_exports__);
-      _b__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__("./src/regular with copied circ dep/b.js");
-
-      const baz = _b__WEBPACK_IMPORTED_MODULE_0__["default"]+'baz';
-      __webpack_exports__["default"] = (baz);
-    }
-  )
-});
-```
-#### The `__webpack_module_cache__` and `__webpack_require__` variables
-
-As you can see in the example above, `import b from './b'` is transformed to `__webpack_require__("./src/regular with copied circ dep/b.js")`.
-
-So what is `__webpack_require__()`?
-
-Whenever `__webpack_require__` is called, it takes the `moduleId` (`"./src/regular with copied circ dep/b.js"` in this case) and checks if there is already
-an entry for this `moduleId` in `__webpack_module_cache__`
-
-// TODO: finish
-
+You can spin up this app locally by running `yarn dev`

@@ -195,44 +195,15 @@ This can lead to `Uncaught ReferenceError: Cannot access '__WEBPACK_DEFAULT_EXPO
 
 ### (in)direct
 
-Are we directly reading an imported value or are we deferring that in some way?
+Are all modules processed by Webpack before reading imported values?
 
-Direct read:
-```js direct.js
-import {foo} from './foo'
-
-// directly reading and using `foo`. 
-// If the `module.exports` for `foo.js` are not set correctly (due to a circ dep), 
-// we might get unexpected behavior
-const bar = foo + 'bar'
-
-export default bar
-```
-
-Indirect read:
-```js indirect.js
-import {foo} from './foo'
-
-function bar() {
-  return foo + 'bar'
-} 
-
-// or
-
-function dynamicImportBaz() {
-  return import('./baz').then((module) => {
-    return module.default + 'bar'
-  })
-}
-
-export default bar
-// export default dynamicImportBaz
-```
+Important note: indirect is not the same as async. This is all about the synchronous order of execution due to importing of scripts.
 
 The moment we access an imported value matters:
 
-If we access a value from a circular module directly, it's exports will not be set yet. It will have the preliminary `module.exports = {}`.
-However, if we read values from a circular module indirectly, we are able to finish processing all modules. 
+If we access a value from a circular module before that module is processed fully, it's exports will not be set yet. It will have the preliminary `module.exports = {}`.
+
+However, if we read value(s) from a circular module until after all modules in the circ dep chain are finished, we are able to read from the `module.exports` with its default or named exports set correctly.
 
 The finishing part is important because webpack holds a *reference* to a module's `module.exports` and that can change once processing all modules is done:
 
@@ -243,7 +214,6 @@ import './moduleA.js';
 import { direct, indirectFn } from './moduleB.js'
 
 // All imports have been resolved and processed
-// ModuleA's `module.exports` is correctly set: `{ default: 'bStatic imported from ./moduleB'}` 
 console.log({direct, indirectFn: indirectFn() })
 ```
 
@@ -259,7 +229,7 @@ export default useStaticValueFromB;
 import useImportedValue from './moduleA';
 
 // ModuleA's `module.exports` is preliminary set: `{}` 
-const direct = useImportedValue;
+const direct = useImportedValue; // const direct = undefined
 
 // We only read `useImportedValue` when this function is called in `entry.js`
 const indirectFn = () => useImportedValue;
@@ -274,3 +244,36 @@ and have their `module.exports` set to the correct value.
 
 It is important to realize that `module.exports` for `moduleA.js` is different when reading it in `moduleB.js` in direct, 
 vs reading it in `entry.js` after all imports have been resolved.
+
+## Conclusion
+
+Hopefully these pages have given you a better understanding of the way circular dependencies are handled in Webpack.
+
+And perhaps you've also learned a couple things about the module resolution system.
+
+Here are some **key take aways**:
+
+### Module resolution
+
+- Each file (module) is transformed into a module function, where webpack handles imports and exports
+- This module function is called on the first time that module is requested.
+- The results of the module function are cached in `__webpack_module_cache__`
+- When that same module is requested subsequent times, Webpack serves the `module.exports` from the `__webpack_module_cache__`
+- **While** Webpack is processing a module with a default export, it gets a preliminary `module.exports` set to an empty object (`{}`)
+- When using named exports, Webpack sets a getter for each named export on the preliminary `module.exports`
+  - This happens in the module function, *before* executing any module code
+- When using `es6` as target, the default export is treated as named export, with a getter for `__WEBPACK_DEFAULT_EXPORT__`
+
+### Circular Dependencies
+
+- Circular dependencies are solved in Webpack by preliminary assigning `module.exports = {}` even before processing the module
+  - This means that that when a module requests itself in a circular dependency chain it will always return at least an empty object for the `import`/`require` of itself
+  - It also means that Circular dependencies do not lead to higher memory consumption or duplication of files
+- When determining how a circ dep will behave, follow the below flow chart
+- Other tools (`babel`, `jest`, `typescript`) in your project might handle circular dependencies differently... 
+
+<img src="/circ-dep-flow.png" style={{width: '100vw'}} />
+
+## Next
+
+There's no next, but you can return to the [first page](/)

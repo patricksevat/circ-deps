@@ -1,0 +1,15 @@
+# Variations (classes, chunks, ESM)
+
+On this page we will visit some variations on the previous examples and see if they have impact on the way circular dependencies behave.
+
+## In short
+
+- Classes are no different from values or functions. The main important factor is when an export of a circular dependency is read: direct or indirect.
+Both are possible with classes (or instances). You can directly read an instance property or you can defer it by wrapping it in a function and call that function once all modules have been resolved.
+- Chunks add a complexity layer on top of modules, but Webpack ensures that all chunks are read in the correct order. It takes into account which chunk depends on other chunks and loads accordingly. 
+When it comes to the modules contained within that chunk, those are handled in the same way as without chunks. No difference here: still a shared `__webpack_module_cache__` and `__webpack_require__` works in the same way.
+- ESM makes some minor changes in the way that chunks are loaded, but there are no changes to the mechanism for resolving chunks, nor changes to the module resolution mechanism.
+
+## Next
+
+Take a look at the [Overview & Conclusion page](/overview)
