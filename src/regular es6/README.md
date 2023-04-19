@@ -1,7 +1,5 @@
 # Default exports circ dep (ES6)
 
-This is the same as RCA for the Circular dependencies error (Internal Postman)
-
 ## Takeaways
 
 - Behaves similar to named exports

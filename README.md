@@ -1,10 +1,15 @@
 # About this repo
 
-This repo showcases a couple different ways how circular dependencies are being handled by Webpack
+This repo [https://github.com/patricksevat/circ-deps](https://github.com/patricksevat/circ-deps) showcases a couple different ways how circular dependencies are being handled by Webpack
 
 ## Interactive explainer
 
 If you are just interested in learning how circular dependencies in Webpack work, the [explainer app](https://circ-deps.vercel.app/) is made for you
+
+## Decision tree
+
+![Circ Deps decision tree](./public/circ-dep-flow.png "Circular Dependency Decision Tree")
+
 
 ## The src examples
 
